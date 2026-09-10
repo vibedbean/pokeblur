@@ -1,0 +1,447 @@
+/* ==========================================
+   BASE & LAYOUT
+   ========================================== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1a262c;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ==========================================
+   FIXED TOP HEADER
+   ========================================== */
+.top-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 56px;
+  background-color: #12191d;
+  border-bottom: 1px solid #2a373d;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ff5350;
+  letter-spacing: -0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9ba8b0;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-tab:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-tab.active {
+  background-color: #243238;
+  color: #ffffff;
+  border-color: #3a4b52;
+}
+
+/* ==========================================
+   MAIN GAME CONTAINER & VIEWS
+   ========================================== */
+.main-content {
+  margin-top: 56px; /* Offset for top fixed header */
+  width: 100%;
+  max-width: 480px;
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#daily-view, #unlimited-view {
+  position: relative; /* Container anchor for centered Game Over overlay */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Header Text */
+.game-header h2 {
+  margin: 0 0 6px 0;
+  font-size: 1.1rem;
+  color: #9ba8b0;
+  font-weight: 500;
+}
+
+#round-label, #unlimited-round-label {
+  margin: 4px 0;
+  font-size: 1rem;
+  color: #d0d7de;
+  font-weight: 600;
+}
+
+#stage-label, #unlimited-stage-label {
+  margin: 2px 0 16px 0;
+  font-size: 0.9rem;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* ==========================================
+   UNLIMITED MODE SUB-NAVIGATION
+   ========================================== */
+.unlimited-header-nav {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  background-color: #12191d;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #2a373d;
+}
+
+.mode-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #9ba8b0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-toggle-btn:hover {
+  color: #ffffff;
+}
+
+.mode-toggle-btn.active {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* ==========================================
+   IMAGE FRAME & OVERLAY
+   ========================================== */
+.image-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 16px auto;
+  background-color: #222e35;
+  border: 2px solid #2a373d;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+#pokemon-image, #unlimited-pokemon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: filter 0.4s ease;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 25, 29, 0.85);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ==========================================
+   START SCREEN & BUTTONS
+   ========================================== */
+#start-screen {
+  margin-top: 8px;
+}
+
+.subtitle {
+  color: #9ba8b0;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.primary-btn {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.primary-btn:hover {
+  background-color: #2563eb;
+}
+
+.primary-btn:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================
+   SEARCH & AUTOCOMPLETE
+   ========================================== */
+#search-wrapper, #unlimited-search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 12px auto;
+}
+
+#guess-input, #unlimited-guess-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #3a4b52;
+  background-color: #222e35;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+#guess-input:focus, #unlimited-guess-input:focus {
+  border-color: #3b82f6;
+}
+
+#suggestions, #unlimited-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #222e35;
+  border: 1px solid #3a4b52;
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.suggestion-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #d0d7de;
+  border-bottom: 1px solid #2a373d;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: #2e3e47;
+  color: #ffffff;
+}
+
+/* ==========================================
+   ACTION BUTTONS & MESSAGES
+   ========================================== */
+#buttons, #unlimited-buttons {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.action-btn {
+  background-color: #2e3e47;
+  color: #ffffff;
+  border: 1px solid #3a4b52;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: #3a4b52;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#next-btn, #unlimited-next-btn {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+#next-btn:hover, #unlimited-next-btn:hover {
+  background-color: #2563eb;
+}
+
+#result-message, #unlimited-result-message {
+  min-height: 24px;
+  margin-top: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d0d7de;
+}
+
+/* ==========================================
+   CENTERED GAME OVER PANEL
+   ========================================== */
+#game-over-panel, #unlimited-game-over-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #222e35;
+  border: 1px solid #3a4b52;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  box-sizing: border-box;
+}
+
+#game-over-panel h2, #unlimited-game-over-panel h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  color: #ffffff;
+}
+
+.stats-summary {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+  padding: 12px;
+  background-color: #1a262c;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #9ba8b0;
+}
+
+.stats-summary span {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 4px;
+}
+
+/* ==========================================
+   CONFETTI ANIMATION
+   ========================================== */
+/* Confetti dimension fix: small square/rectangular pieces */
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  z-index: 9999;
+  pointer-events: none;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* ==========================================
+   MOBILE RESPONSIVENESS
+   ========================================== */
+@media (max-width: 600px) {
+  .top-header {
+    padding: 0 12px;
+  }
+
+  .header-left {
+    gap: 12px;
+  }
+
+  .logo-title {
+    font-size: 1.2rem;
+  }
+
+  .nav-tab {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+
+  .image-wrapper {
+    width: 250px;
+    height: 250px;
+  }
+}
