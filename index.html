@@ -16,7 +16,7 @@
       <nav class="nav-links">
         <button id="mode-daily-btn" class="nav-tab active">Daily Puzzle</button>
         <button id="mode-unlimited-btn" class="nav-tab">Unlimited Mode</button>
-        
+        <button id="mode-reverse-btn" class="nav-tab">Reverse Mode</button>
       </nav>
     </div>
   </header>
@@ -74,53 +74,150 @@
     </div>
 
     <!-- UNLIMITED MODE VIEW -->
-<div id="unlimited-view" class="hidden">
-  <div class="unlimited-header-nav">
-    <button id="unlimited-normal-btn" class="mode-toggle-btn active">Normal Mode</button>
-    <button id="unlimited-shiny-btn" class="mode-toggle-btn">Shiny Mode</button>
-  </div>
+    <div id="unlimited-view" class="hidden">
+      <div class="unlimited-header-nav">
+        <button id="unlimited-normal-btn" class="mode-toggle-btn active">Normal Mode</button>
+        <button id="unlimited-shiny-btn" class="mode-toggle-btn">Shiny Mode</button>
+      </div>
 
+      <!-- Generation Filter Container (Hides when game starts) -->
+      <div id="gen-filter-container" class="gen-filter-wrapper">
+        <span class="gen-filter-label">Filter Generations:</span>
+        <div class="gen-buttons-grid">
+          <button class="gen-btn active all-btn" id="gen-all-btn">All</button>
+          <button class="gen-btn active" data-gen="1">Gen 1</button>
+          <button class="gen-btn active" data-gen="2">Gen 2</button>
+          <button class="gen-btn active" data-gen="3">Gen 3</button>
+          <button class="gen-btn active" data-gen="4">Gen 4</button>
+          <button class="gen-btn active" data-gen="5">Gen 5</button>
+          <button class="gen-btn active" data-gen="6">Gen 6</button>
+          <button class="gen-btn active" data-gen="7">Gen 7</button>
+          <button class="gen-btn active" data-gen="8">Gen 8</button>
+          <button class="gen-btn active" data-gen="9">Gen 9</button>
+        </div>
+      </div>
+
+      <header class="game-header">
+        <h2 id="unlimited-mode-title">Unlimited — Normal Mode</h2>
+        <p id="unlimited-round-label">Round 1 / 5 — Score: 0</p>
+        <p id="unlimited-stage-label">Stage 1 — Guess for 5 points</p>
+      </header>
+
+      <!-- Unlimited Image Box -->
+      <div class="image-wrapper">
+        <div id="unlimited-image-overlay" class="overlay">Loading...</div>
+        <img id="unlimited-pokemon-image" src="" alt="Pokémon" />
+      </div>
+
+      <!-- Unlimited Start Screen -->
+      <div id="unlimited-start-screen">
+        <p class="subtitle">Play infinite rounds of random Pokémon!</p>
+        <button id="unlimited-start-btn" class="primary-btn">Start Unlimited Game</button>
+      </div>
+
+      <!-- Unlimited Search Wrapper -->
+      <div id="unlimited-search-wrapper" class="hidden">
+        <input type="text" id="unlimited-guess-input" placeholder="Type a Pokémon name..." autocomplete="off" />
+        <div id="unlimited-suggestions"></div>
+      </div>
+
+      <!-- Unlimited Action Buttons -->
+      <div id="unlimited-buttons" class="hidden">
+        <button id="unlimited-skip-btn" class="action-btn">Skip / Next Stage</button>
+        <button id="unlimited-next-btn" class="action-btn hidden">Next Pokémon ➔</button>
+      </div>
+
+      <p id="unlimited-result-message"></p>
+
+      <!-- Unlimited Game Over Overlay -->
+      <div id="unlimited-game-over-panel" class="hidden">
+        <h2>Game Complete!</h2>
+        <p id="unlimited-final-score-text"></p>
+        <button id="play-again-btn" class="primary-btn">Play Again</button>
+      </div>
+    </div>
+
+   <!-- REVERSE MODE VIEW -->
+<div id="reverse-view" class="hidden">
   <header class="game-header">
-    <h2 id="unlimited-mode-title">Unlimited — Normal Mode</h2>
-    <p id="unlimited-round-label">Round 1 / 5 — Score: 0</p>
-    <p id="unlimited-stage-label">Stage 1 — Guess for 5 points</p>
+    <h2>Reverse Mode</h2>
+    <p id="reverse-round-label">Round 1 / 5 — Score: 0</p>
+    <div id="reverse-reward-box" class="reward-box hidden">
+      <span class="reward-label">Current Round Value:</span>
+      <span id="reverse-current-value">0</span>
+      <span class="reward-unit">pts</span>
+    </div>
   </header>
 
-  <!-- Unlimited Image Box -->
-  <div class="image-wrapper">
-    <div id="unlimited-image-overlay" class="overlay">Loading...</div>
-    <img id="unlimited-pokemon-image" src="" alt="Pokémon" />
+  <!-- Reverse Start Screen -->
+  <div id="reverse-start-screen">
+    <p class="subtitle">
+      Guess the hidden Pokémon! Flip categories to reveal hints, but beware: the amount of points you get is proportional to how many available pokemon there are left. Wrong guesses force a hint flip!
+    </p>
+    <button id="reverse-start-btn" class="primary-btn">Start Reverse Game</button>
   </div>
 
-  <!-- Unlimited Start Screen -->
-  <div id="unlimited-start-screen">
-    <p class="subtitle">Play infinite rounds of random Pokémon!</p>
-    <button id="unlimited-start-btn" class="primary-btn">Start Unlimited Game</button>
+  <!-- Reverse Gameplay Container -->
+  <div id="reverse-game-play" class="hidden">
+    <!-- Side-by-Side Hints Grid (6 Categories) -->
+    <div class="hints-grid">
+      <button class="hint-tile" data-category="generation">
+        <span class="tile-label">Generation</span>
+        <span class="tile-value">???</span>
+      </button>
+      <button class="hint-tile" data-category="primaryType">
+        <span class="tile-label">Primary Type</span>
+        <span class="tile-value">???</span>
+      </button>
+      <button class="hint-tile" data-category="secondaryType">
+        <span class="tile-label">Secondary Type</span>
+        <span class="tile-value">???</span>
+      </button>
+      <button class="hint-tile" data-category="form">
+        <span class="tile-label">Form</span>
+        <span class="tile-value">???</span>
+      </button>
+      <button class="hint-tile" data-category="bst">
+        <span class="tile-label">Base Stat Total</span>
+        <span class="tile-value">???</span>
+      </button>
+      <button class="hint-tile" data-category="size">
+        <span class="tile-label">Height / Weight</span>
+        <span class="tile-value">???</span>
+      </button>
+    </div>
+
+    <p id="reverse-status-msg" class="reverse-status">Make a guess or tap a category tile to reveal a hint!</p>
+
+    <!-- Search Input matching Daily/Unlimited layout -->
+    <div id="reverse-search-wrapper">
+      <input type="text" id="reverse-guess-input" placeholder="Type a Pokémon name..." autocomplete="off" />
+      <div id="reverse-suggestions" class="suggestions-container"></div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div id="reverse-buttons" class="button-group">
+      <button id="reverse-skip-btn" class="action-btn">Give Up</button>
+      <button id="reverse-next-btn" class="action-btn hidden">Next Pokémon ➔</button>
+    </div>
   </div>
 
-  <!-- Unlimited Search Wrapper -->
-  <div id="unlimited-search-wrapper" class="hidden">
-    <input type="text" id="unlimited-guess-input" placeholder="Type a Pokémon name..." autocomplete="off" />
-    <div id="unlimited-suggestions"></div>
-  </div>
+  <p id="reverse-result-message"></p>
 
-  <!-- Unlimited Action Buttons -->
-  <div id="unlimited-buttons" class="hidden">
-    <button id="unlimited-skip-btn" class="action-btn">Skip / Next Stage</button>
-    <button id="unlimited-next-btn" class="action-btn hidden">Next Pokémon ➔</button>
-  </div>
-
-  <p id="unlimited-result-message"></p>
-
-  <!-- Unlimited Game Over Overlay -->
-  <div id="unlimited-game-over-panel" class="hidden">
+  <!-- Reverse Game Over Panel -->
+  <div id="reverse-game-over-panel" class="hidden">
     <h2>Game Complete!</h2>
-    <p id="unlimited-final-score-text"></p>
-    <button id="play-again-btn" class="primary-btn">Play Again</button>
+    <p id="reverse-final-score-text"></p>
+    <div id="reverse-game-over-panel" class="game-over-panel hidden">
+  <h2>Game Complete!</h2>
+  <p id="reverse-final-score-text" class="final-score-text"></p>
+  <p id="reverse-final-highscore-text" class="final-highscore-text" style="color: #f1c40f; font-weight: bold; margin-top: 6px;"></p>
+  
+  <button id="reverse-play-again-btn" class="action-btn">Play Again</button>
+</div>
+    <button id="reverse-play-again-btn" class="primary-btn">Play Again</button>
   </div>
 </div>
-
-
 
   </main>
 
