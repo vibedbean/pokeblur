@@ -11,6 +11,27 @@ const stages = [
 const TOTAL_ROUNDS = 5;
 const START_DATE = new Date('2026-09-10T00:00:00');
 
+// Generation Base ID Ranges (IDs 1 to 1025)
+const GEN_RANGES = {
+  1: [1, 151],
+  2: [152, 251],
+  3: [252, 386],
+  4: [387, 493],
+  5: [494, 649],
+  6: [650, 721],
+  7: [722, 809],
+  8: [810, 905],
+  9: [906, 1025]
+};
+
+// Map Regional Names to their actual debut Generation
+const REGIONAL_GEN_MAP = {
+  'alola': 7,
+  'galar': 8,
+  'hisui': 8,
+  'paldea': 9
+};
+
 // Shared Data
 let allPokemonList = [];
 let pokemonCount = 0;
@@ -31,6 +52,7 @@ let unlimitedRound = 1;
 let unlimitedTotalScore = 0;
 let unlimitedCurrentStage = 0;
 let unlimitedAnswer = null;
+let selectedGenerations = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
 // DOM Elements - Navigation & Modes
 const dailyViewEl = document.getElementById('daily-view');
@@ -80,15 +102,26 @@ const unlimitedResultEl = document.getElementById('unlimited-result-message');
 const unlimitedGameOverPanel = document.getElementById('unlimited-game-over-panel');
 const unlimitedFinalScoreText = document.getElementById('unlimited-final-score-text');
 const playAgainBtn = document.getElementById('play-again-btn');
+const genFilterContainer = document.getElementById('gen-filter-container');
 
-// ---- Header Mode Navigation ----
+// ==========================================
+// 1. TAB NAVIGATION & MODE SETUP
+// ==========================================
+function switchTab(activeBtn, activeView) {
+  document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+  
+  ['daily-view', 'unlimited-view', 'reverse-view'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+
+  if (activeBtn) activeBtn.classList.add('active');
+  if (activeView) activeView.classList.remove('hidden');
+}
+
 function setupModeNavigation() {
-  modeDailyBtn.addEventListener('click', () => {
-    modeDailyBtn.classList.add('active');
-    modeUnlimitedBtn.classList.remove('active');
-
-    unlimitedViewEl.classList.add('hidden');
-    dailyViewEl.classList.remove('hidden');
+  modeDailyBtn.addEventListener('click', function() {
+    switchTab(this, dailyViewEl);
 
     resetUnlimitedToStartScreen();
 
@@ -97,15 +130,11 @@ function setupModeNavigation() {
     }
   });
 
-  modeUnlimitedBtn.addEventListener('click', () => {
-    modeUnlimitedBtn.classList.add('active');
-    modeDailyBtn.classList.remove('active');
+  modeUnlimitedBtn.addEventListener('click', function() {
+    switchTab(this, unlimitedViewEl);
 
     clearInterval(teaserInterval);
     teaserInterval = null;
-
-    dailyViewEl.classList.add('hidden');
-    unlimitedViewEl.classList.remove('hidden');
 
     resetUnlimitedToStartScreen();
     startTeaserCarousel(unlimitedImageEl, unlimitedMode === 'shiny');
@@ -135,7 +164,56 @@ function setupModeNavigation() {
   });
 }
 
-// ---- Name Formatter Helper ----
+// ---- Smart Generation Toggle Logic ----
+function setupGenButtons() {
+  const genBtns = document.querySelectorAll('.gen-btn:not(#gen-all-btn)');
+  const allBtn = document.getElementById('gen-all-btn');
+
+  function syncUI() {
+    genBtns.forEach(btn => {
+      const g = parseInt(btn.getAttribute('data-gen'), 10);
+      if (selectedGenerations.has(g)) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    if (selectedGenerations.size === 9) {
+      allBtn.classList.add('active');
+    } else {
+      allBtn.classList.remove('active');
+    }
+  }
+
+  genBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const genNum = parseInt(btn.getAttribute('data-gen'), 10);
+
+      if (selectedGenerations.size === 9) {
+        selectedGenerations = new Set([genNum]);
+      } else {
+        if (selectedGenerations.has(genNum)) {
+          if (selectedGenerations.size > 1) {
+            selectedGenerations.delete(genNum);
+          }
+        } else {
+          selectedGenerations.add(genNum);
+        }
+      }
+      syncUI();
+    });
+  });
+
+  allBtn.addEventListener('click', () => {
+    selectedGenerations = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    syncUI();
+  });
+
+  syncUI();
+}
+
+// ---- Helper Functions ----
 function formatPokemonName(rawName) {
   return rawName
     .split('-')
@@ -143,7 +221,6 @@ function formatPokemonName(rawName) {
     .join(' ');
 }
 
-// ---- Storage Helpers ----
 function getStoredStats() {
   const defaultStats = { gamesPlayed: 0, totalPoints: 0 };
   const saved = localStorage.getItem('pokeblur-stats');
@@ -162,7 +239,20 @@ function updatePersistentStats(finalScore) {
   return stats;
 }
 
-// ---- Seeded PRNG Helpers ----
+function getReverseHighScore() {
+  const saved = localStorage.getItem('pokeblur-reverse-highscore');
+  return saved ? parseInt(saved, 10) : 0;
+}
+
+function updateReverseHighScore(score) {
+  const currentBest = getReverseHighScore();
+  if (score > currentBest) {
+    localStorage.setItem('pokeblur-reverse-highscore', score.toString());
+    return score;
+  }
+  return currentBest;
+}
+
 function getSeedString(dateObj) {
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -187,7 +277,6 @@ function hashString(str) {
   return hash;
 }
 
-// ---- Date & Puzzle Counter ----
 function setupPuzzleHeader() {
   const options = { month: 'short', day: 'numeric', year: 'numeric' };
   const dateStr = selectedDate.toLocaleDateString('en-US', options);
@@ -203,7 +292,7 @@ function setupPuzzleHeader() {
 
 // ---- Load Master Pokémon List ----
 async function loadPokemonList() {
-  const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+  const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10275');
   const data = await res.json();
   
   allPokemonList = data.results.map((item, idx) => ({
@@ -224,40 +313,91 @@ function generateDailyPokemonQueue() {
 
   const chosenIndices = new Set();
   while (chosenIndices.size < TOTAL_ROUNDS) {
-    const idx = Math.floor(rng() * pokemonCount);
+    const idx = Math.floor(rng() * 1025);
     chosenIndices.add(idx);
   }
 
   dailyPokemonQueue = Array.from(chosenIndices);
 }
 
-// ---- Fetch Specific Pokémon Artwork ----
+// ---- Fetch Pokémon Logic ----
 async function fetchPokemonByQueueIndex(roundIdx) {
   const index = dailyPokemonQueue[roundIdx];
   const pokemon = allPokemonList[index];
   
-  const res = await fetch(pokemon.url);
-  const data = await res.json();
-  const artwork = data.sprites.other?.['official-artwork']?.front_default;
-  
-  if (artwork) {
-    return { rawName: pokemon.rawName, displayName: pokemon.displayName, image: artwork };
-  } else {
-    return fetchRandomPokemonWithArtwork(false);
+  try {
+    const res = await fetch(pokemon.url);
+    if (!res.ok) throw new Error('Fetch failed');
+    const data = await res.json();
+    const artwork = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default;
+    
+    if (artwork) {
+      return { rawName: pokemon.rawName, displayName: pokemon.displayName, image: artwork };
+    }
+  } catch (e) {
+    // Fallback
   }
+  return fetchRandomPokemonWithArtwork(false);
+}
+
+function isPokemonInSelectedGens(pokemon, pokemonData = null) {
+  const rawName = pokemon.rawName.toLowerCase();
+
+  if (rawName.startsWith('pikachu-') && !rawName.includes('gmax')) {
+    const isCostumeOrCap = 
+      rawName.includes('cap') || 
+      rawName.includes('cosplay') || 
+      rawName.includes('star') || 
+      rawName.includes('belle') || 
+      rawName.includes('phd') || 
+      rawName.includes('libre');
+      
+    if (isCostumeOrCap) {
+      return false;
+    }
+  }
+
+  let gen = null;
+
+  for (const [region, targetGen] of Object.entries(REGIONAL_GEN_MAP)) {
+    if (rawName.includes(`-${region}`)) {
+      gen = targetGen;
+      break;
+    }
+  }
+
+  if (gen === null) {
+    let baseId = pokemon.id;
+    if (baseId > 1025 && pokemonData?.species?.url) {
+      const parts = pokemonData.species.url.split('/').filter(Boolean);
+      baseId = parseInt(parts[parts.length - 1], 10);
+    }
+
+    for (const [g, [min, max]] of Object.entries(GEN_RANGES)) {
+      if (baseId >= min && baseId <= max) {
+        gen = parseInt(g, 10);
+        break;
+      }
+    }
+  }
+
+  return selectedGenerations.has(gen);
 }
 
 async function fetchRandomPokemonWithArtwork(isShiny = false) {
   while (true) {
     const index = Math.floor(Math.random() * pokemonCount);
     const pokemon = allPokemonList[index];
+    
     const res = await fetch(pokemon.url);
     if (!res.ok) continue;
     const data = await res.json();
     
+    if (!isPokemonInSelectedGens(pokemon, data)) continue;
+
     const artwork = isShiny 
-      ? data.sprites.other?.['official-artwork']?.front_shiny 
-      : data.sprites.other?.['official-artwork']?.front_default;
+      ? (data.sprites?.other?.['official-artwork']?.front_shiny || data.sprites?.front_shiny)
+      : (data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default);
 
     if (artwork) {
       return { rawName: pokemon.rawName, displayName: pokemon.displayName, image: artwork };
@@ -282,7 +422,6 @@ function startTeaserCarousel(targetImgEl, isShiny = false) {
   
   const cycleImage = () => {
     const randomId = Math.floor(Math.random() * 898) + 1;
-    const path = isShiny ? 'shiny' : 'official-artwork';
     targetImgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${isShiny ? 'shiny/' : ''}${randomId}.png`;
   };
 
@@ -290,7 +429,9 @@ function startTeaserCarousel(targetImgEl, isShiny = false) {
   teaserInterval = setInterval(cycleImage, 1500);
 }
 
-// ---- Start Daily Game Action ----
+// ==========================================
+// 2. DAILY GAME LOGIC
+// ==========================================
 startBtn.addEventListener('click', async () => {
   clearInterval(teaserInterval);
   teaserInterval = null;
@@ -301,20 +442,15 @@ startBtn.addEventListener('click', async () => {
   await loadNewPokemon();
 });
 
-// ---- Load New Round Pokémon (Daily) ----
 async function loadNewPokemon(isRestoring = false) {
   imageOverlayEl.classList.add('visible');
 
   const data = await fetchPokemonByQueueIndex(round - 1);
-
   answer = { rawName: data.rawName, displayName: data.displayName, image: data.image };
 
   await preloadImage(answer.image);
 
-  // Only reset stage to 0 if we are NOT restoring mid-round progress
-  if (!isRestoring) {
-    currentStage = 0;
-  }
+  if (!isRestoring) currentStage = 0;
 
   imageEl.src = answer.image;
   applyStage(true);
@@ -346,7 +482,6 @@ function updateRoundLabel() {
   roundLabelEl.textContent = `Round ${round} / ${TOTAL_ROUNDS} — Score: ${totalScore}`;
 }
 
-// Autocomplete Daily
 inputEl.addEventListener('input', () => {
   setupAutocomplete(inputEl, suggestionsEl, handleGuess);
 });
@@ -394,11 +529,15 @@ function handleGuess(guessedPkmn) {
     playCorrectSound();
     endRound();
   } else {
+    playWrongSound();
     nextStage(`Wrong guess — it's not ${guessedPkmn.displayName}.`);
   }
 }
 
-skipBtn.addEventListener('click', () => nextStage('Skipped.'));
+skipBtn.addEventListener('click', () => {
+  playWrongSound();
+  nextStage('Skipped.');
+});
 
 function nextStage(message) {
   if (currentStage >= stages.length - 1) {
@@ -410,8 +549,6 @@ function nextStage(message) {
   currentStage++;
   applyStage();
   resultEl.textContent = message;
-  
-  // Lock in the stage penalty immediately so refreshing won't reset the blur!
   saveDailyProgress(false, false);
 }
 
@@ -424,15 +561,15 @@ function endRound() {
     resultEl.textContent += ` Game over! Final score: ${totalScore} / 25.`;
     nextBtn.classList.add('hidden');
     saveDailyProgress(true, false);
-    showGameOverPanel();
+    const stats = updatePersistentStats(totalScore);
+    showGameOverPanel(stats);
   } else {
     nextBtn.classList.remove('hidden');
-    saveDailyProgress(false, true); // Mark that this round is completed and waiting for Next
+    saveDailyProgress(false, true);
   }
 }
 
-function showGameOverPanel() {
-  const stats = updatePersistentStats(totalScore);
+function showGameOverPanel(stats) {
   const avg = (stats.totalPoints / stats.gamesPlayed).toFixed(1);
 
   finalScoreText.textContent = `Final Score: ${totalScore} / 25`;
@@ -459,19 +596,20 @@ nextBtn.addEventListener('click', async () => {
   if (round >= TOTAL_ROUNDS) return;
   nextBtn.disabled = true;
   round++;
-  saveDailyProgress(false, false); // Save the start of the new round
+  saveDailyProgress(false, false);
   await loadNewPokemon();
   setTimeout(() => { nextBtn.disabled = false; }, 500);
 });
 
 // ==========================================
-// UNLIMITED MODE LOGIC
+// 3. UNLIMITED MODE LOGIC
 // ==========================================
 function resetUnlimitedToStartScreen() {
   clearInterval(teaserInterval);
   teaserInterval = null;
 
   unlimitedStartScreen.classList.remove('hidden');
+  genFilterContainer.classList.remove('hidden');
   unlimitedSearchWrapper.classList.add('hidden');
   unlimitedButtons.classList.add('hidden');
   unlimitedGameOverPanel.classList.add('hidden');
@@ -488,6 +626,7 @@ unlimitedStartBtn.addEventListener('click', async () => {
   teaserInterval = null;
 
   unlimitedStartScreen.classList.add('hidden');
+  genFilterContainer.classList.add('hidden');
   unlimitedSearchWrapper.classList.remove('hidden');
   unlimitedButtons.classList.remove('hidden');
 
@@ -560,11 +699,15 @@ function handleUnlimitedGuess(guessedPkmn) {
     playCorrectSound();
     endUnlimitedRound();
   } else {
+    playWrongSound();
     nextUnlimitedStage(`Wrong guess — it's not ${guessedPkmn.displayName}.`);
   }
 }
 
-unlimitedSkipBtn.addEventListener('click', () => nextUnlimitedStage('Skipped.'));
+unlimitedSkipBtn.addEventListener('click', () => {
+  playWrongSound();
+  nextUnlimitedStage('Skipped.');
+});
 
 function nextUnlimitedStage(message) {
   if (unlimitedCurrentStage >= stages.length - 1) {
@@ -608,7 +751,367 @@ playAgainBtn.addEventListener('click', () => {
 });
 
 // ==========================================
-// EFFECTS
+// 4. REVERSE MODE LOGIC
+// ==========================================
+const reverseState = {
+  currentRound: 1,
+  maxRounds: 5,
+  totalScore: 0,
+  highScore: 0,
+  targetPokemon: null,
+  targetDetails: null,
+  revealedHints: new Set(),
+  mustFlipHint: false,
+  currentWorth: 0,
+  roundActive: false
+};
+
+const reverseElements = {
+  view: document.getElementById('reverse-view'),
+  navBtn: document.getElementById('mode-reverse-btn'),
+  roundLabel: document.getElementById('reverse-round-label'),
+  rewardBox: document.getElementById('reverse-reward-box'),
+  currentValue: document.getElementById('reverse-current-value'),
+  startScreen: document.getElementById('reverse-start-screen'),
+  startBtn: document.getElementById('reverse-start-btn'),
+  highScoreDisplay: document.getElementById('reverse-high-score-display'),
+  gamePlay: document.getElementById('reverse-game-play'),
+  hintTiles: document.querySelectorAll('#reverse-game-play .hint-tile'),
+  statusMsg: document.getElementById('reverse-status-msg'),
+  searchWrapper: document.getElementById('reverse-search-wrapper'),
+  guessInput: document.getElementById('reverse-guess-input'),
+  suggestions: document.getElementById('reverse-suggestions'),
+  skipBtn: document.getElementById('reverse-skip-btn'),
+  nextBtn: document.getElementById('reverse-next-btn'),
+  resultMsg: document.getElementById('reverse-result-message'),
+  gameOverPanel: document.getElementById('reverse-game-over-panel'),
+  finalScoreText: document.getElementById('reverse-final-score-text'),
+  finalHighScoreText: document.getElementById('reverse-final-highscore-text'),
+  playAgainBtn: document.getElementById('reverse-play-again-btn')
+};
+
+// Nav Tab Setup
+reverseElements.navBtn.addEventListener('click', function() {
+  switchTab(this, reverseElements.view);
+  updateReverseHighScoreDisplay();
+});
+
+// Action Controls
+reverseElements.startBtn.addEventListener('click', startReverseGame);
+reverseElements.playAgainBtn.addEventListener('click', startReverseGame);
+reverseElements.skipBtn.addEventListener('click', giveUpReverseRound);
+reverseElements.nextBtn.addEventListener('click', nextReverseRound);
+
+reverseElements.hintTiles.forEach(tile => {
+  tile.addEventListener('click', () => handleHintClick(tile));
+});
+
+reverseElements.guessInput.addEventListener('input', handleReverseAutocomplete);
+
+// Close suggestions on outside mousedown
+document.addEventListener('mousedown', (e) => {
+  if (!reverseElements.searchWrapper?.contains(e.target)) {
+    reverseElements.suggestions?.classList.remove('active');
+  }
+});
+
+function updateReverseHighScoreDisplay() {
+  reverseState.highScore = getReverseHighScore();
+  if (reverseElements.highScoreDisplay) {
+    reverseElements.highScoreDisplay.textContent = `High Score: ${reverseState.highScore.toLocaleString()} pts`;
+  }
+}
+
+function startReverseGame() {
+  reverseState.currentRound = 1;
+  reverseState.totalScore = 0;
+  reverseState.highScore = getReverseHighScore();
+
+  reverseElements.gameOverPanel.classList.add('hidden');
+  reverseElements.startScreen.classList.add('hidden');
+  reverseElements.rewardBox.classList.remove('hidden');
+  reverseElements.gamePlay.classList.remove('hidden');
+  
+  setupReverseRound();
+}
+
+async function setupReverseRound() {
+  reverseState.roundActive = false;
+  reverseState.revealedHints.clear();
+  reverseState.mustFlipHint = false;
+  reverseElements.resultMsg.textContent = '';
+  reverseElements.statusMsg.textContent = 'Make a guess or tap a category tile to reveal a hint!';
+  reverseElements.statusMsg.style.color = '#dddddd';
+
+  reverseElements.hintTiles.forEach(tile => {
+    tile.classList.remove('revealed', 'must-flip');
+    tile.disabled = false;
+    tile.querySelector('.tile-value').textContent = '???';
+  });
+
+  reverseElements.skipBtn.classList.remove('hidden');
+  reverseElements.nextBtn.classList.add('hidden');
+  reverseElements.guessInput.disabled = false;
+  reverseElements.guessInput.value = '';
+
+  const validPool = allPokemonList.filter(p => isPokemonInSelectedGens(p));
+  const randomIndex = Math.floor(Math.random() * validPool.length);
+  reverseState.targetPokemon = validPool[randomIndex];
+
+  reverseState.targetDetails = await fetchReversePokemonDetails(reverseState.targetPokemon);
+  
+  reverseState.currentWorth = validPool.length;
+  reverseElements.currentValue.textContent = reverseState.currentWorth.toLocaleString();
+  reverseState.roundActive = true;
+  reverseElements.roundLabel.textContent = `Round ${reverseState.currentRound} / ${reverseState.maxRounds} — Score: ${reverseState.totalScore.toLocaleString()}`;
+}
+
+async function fetchReversePokemonDetails(pokemon) {
+  try {
+    // Fetch target using rawName/URL to handle regional forms properly
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemon.rawName}`);
+    if (!res.ok) throw new Error('Fetch failed');
+    const data = await res.json();
+
+    const rawName = (pokemon.rawName || '').toLowerCase();
+    
+    // Detect Form
+    let form = 'Base Form';
+    if (rawName.includes('gmax')) form = 'Gigantamax';
+    else if (rawName.includes('mega')) form = 'Mega';
+    else if (rawName.includes('alola')) form = 'Alolan';
+    else if (rawName.includes('galar')) form = 'Galarian';
+    else if (rawName.includes('hisui')) form = 'Hisuian';
+    else if (rawName.includes('paldea')) form = 'Paldean';
+
+    // Calculate Base Stat Total
+    const bst = data.stats.reduce((acc, stat) => acc + stat.base_stat, 0);
+
+    // Get Base Species ID for Generation calculation
+    let baseId = data.id;
+    if (data.species?.url) {
+      const parts = data.species.url.split('/').filter(Boolean);
+      baseId = parseInt(parts[parts.length - 1], 10);
+    }
+
+    // Determine Generation debut
+    let gen = 1;
+    for (const [g, [min, max]] of Object.entries(GEN_RANGES)) {
+      if (baseId >= min && baseId <= max) {
+        gen = parseInt(g, 10);
+        break;
+      }
+    }
+
+    // Check regional form override maps if applicable
+    for (const [region, targetGen] of Object.entries(REGIONAL_GEN_MAP)) {
+      if (rawName.includes(region)) {
+        gen = targetGen;
+        break;
+      }
+    }
+
+    return {
+      generation: `Gen ${gen}`,
+      primaryType: data.types[0]?.type?.name ? capitalize(data.types[0].type.name) : 'Unknown',
+      secondaryType: data.types[1]?.type?.name ? capitalize(data.types[1].type.name) : 'None',
+      form: form,
+      bst: `${bst} BST`,
+      size: `${(data.height / 10).toFixed(1)}m / ${(data.weight / 10).toFixed(1)}kg`
+    };
+  } catch (err) {
+    console.error('Error fetching Reverse Pokemon details:', err);
+    return { 
+      generation: 'Unknown', 
+      primaryType: 'Unknown', 
+      secondaryType: 'None', 
+      form: 'Base Form', 
+      bst: '??? BST', 
+      size: '???m / ???kg' 
+    };
+  }
+}
+
+function handleReverseAutocomplete() {
+  const query = reverseElements.guessInput.value.toLowerCase().trim();
+  reverseElements.suggestions.innerHTML = '';
+
+  if (!query || reverseState.mustFlipHint) {
+    reverseElements.suggestions.classList.remove('active');
+    return;
+  }
+
+  const matches = allPokemonList
+    .filter(p => {
+      const name = (p.displayName || p.rawName || '').toLowerCase();
+      return isPokemonInSelectedGens(p) && name.includes(query);
+    })
+    .slice(0, 5);
+
+  if (matches.length === 0) {
+    reverseElements.suggestions.classList.remove('active');
+    return;
+  }
+
+  matches.forEach(match => {
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+
+    const pName = match.displayName || match.rawName;
+    const pId = match.id;
+
+    const img = document.createElement('img');
+    img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pId}.png`;
+    img.alt = pName;
+    img.className = 'suggestion-sprite';
+    item.appendChild(img);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'suggestion-name';
+    nameSpan.textContent = pName;
+    item.appendChild(nameSpan);
+
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      reverseElements.suggestions.classList.remove('active');
+      submitReverseGuess(match);
+    });
+
+    reverseElements.suggestions.appendChild(item);
+  });
+
+  reverseElements.suggestions.classList.add('active');
+}
+
+function submitReverseGuess(guessedPokemon) {
+  reverseElements.suggestions.classList.remove('active');
+  reverseElements.guessInput.value = '';
+
+  const targetName = reverseState.targetPokemon.displayName || reverseState.targetPokemon.rawName;
+  const guessedName = guessedPokemon.displayName || guessedPokemon.rawName;
+
+  if (guessedName.toLowerCase() === targetName.toLowerCase()) {
+    reverseState.roundActive = false;
+    reverseState.totalScore += reverseState.currentWorth;
+    updateReverseHighScore(reverseState.totalScore);
+    
+    reverseElements.resultMsg.textContent = `Correct! It was ${targetName}! Scored +${reverseState.currentWorth.toLocaleString()} pts!`;
+    reverseElements.resultMsg.style.color = '#4cd137';
+    launchConfetti();
+    playCorrectSound();
+    revealAllTiles();
+    finishReverseRound();
+  } else {
+    playWrongSound();
+    const unrevealedTiles = Array.from(reverseElements.hintTiles).filter(
+      tile => !reverseState.revealedHints.has(tile.dataset.category)
+    );
+
+    if (unrevealedTiles.length > 0) {
+      reverseState.mustFlipHint = true;
+      reverseElements.guessInput.disabled = true;
+      reverseElements.statusMsg.textContent = 'Incorrect! Pick a category tile to reveal a hint before guessing again.';
+      reverseElements.statusMsg.style.color = '#ff4757';
+      unrevealedTiles.forEach(tile => tile.classList.add('must-flip'));
+    } else {
+      reverseElements.statusMsg.textContent = 'Incorrect! All hints are already flipped. Try another guess!';
+      reverseElements.statusMsg.style.color = '#ff4757';
+    }
+  }
+}
+
+function handleHintClick(tile) {
+  if (!reverseState.roundActive) return;
+  const category = tile.dataset.category;
+  if (reverseState.revealedHints.has(category)) return;
+
+  reverseState.revealedHints.add(category);
+  tile.classList.add('revealed');
+  tile.classList.remove('must-flip');
+  tile.querySelector('.tile-value').textContent = reverseState.targetDetails[category];
+
+  recalculatePoolWorth();
+
+  if (reverseState.mustFlipHint) {
+    reverseState.mustFlipHint = false;
+    reverseElements.hintTiles.forEach(t => t.classList.remove('must-flip'));
+    reverseElements.guessInput.disabled = false;
+    reverseElements.statusMsg.textContent = 'Hint revealed! You can now guess again.';
+    reverseElements.statusMsg.style.color = '#dddddd';
+  }
+}
+
+function recalculatePoolWorth() {
+  const total = allPokemonList.filter(p => isPokemonInSelectedGens(p)).length;
+  let count = total;
+
+  if (reverseState.revealedHints.has('generation')) count = Math.ceil(count / 4);
+  if (reverseState.revealedHints.has('primaryType')) count = Math.ceil(count / 5);
+  if (reverseState.revealedHints.has('secondaryType')) count = Math.ceil(count / 2);
+  if (reverseState.revealedHints.has('form')) count = Math.ceil(count / 2.5);
+  if (reverseState.revealedHints.has('bst')) count = Math.ceil(count / 3);
+  if (reverseState.revealedHints.has('size')) count = Math.ceil(count / 2);
+
+  if (reverseState.revealedHints.size === 6) count = 1;
+
+  reverseState.currentWorth = Math.max(1, count);
+  reverseElements.currentValue.textContent = reverseState.currentWorth.toLocaleString();
+}
+
+function giveUpReverseRound() {
+  reverseState.roundActive = false;
+  playWrongSound();
+  const targetName = reverseState.targetPokemon.displayName || reverseState.targetPokemon.rawName;
+  reverseElements.resultMsg.textContent = `Round skipped. It was ${targetName}.`;
+  reverseElements.resultMsg.style.color = '#e1b12c';
+  revealAllTiles();
+  finishReverseRound();
+}
+
+function revealAllTiles() {
+  reverseElements.hintTiles.forEach(tile => {
+    const cat = tile.dataset.category;
+    tile.querySelector('.tile-value').textContent = reverseState.targetDetails[cat];
+    tile.classList.add('revealed');
+    tile.classList.remove('must-flip');
+  });
+}
+
+function finishReverseRound() {
+  reverseElements.skipBtn.classList.add('hidden');
+  reverseElements.nextBtn.classList.remove('hidden');
+  reverseElements.roundLabel.textContent = `Round ${reverseState.currentRound} / ${reverseState.maxRounds} — Score: ${reverseState.totalScore.toLocaleString()}`;
+}
+
+function nextReverseRound() {
+  if (reverseState.currentRound < reverseState.maxRounds) {
+    reverseState.currentRound++;
+    setupReverseRound();
+  } else {
+    // Hide playing interface & active round UI elements
+    reverseElements.gamePlay.classList.add('hidden');
+    reverseElements.rewardBox.classList.add('hidden');
+    reverseElements.resultMsg.textContent = ''; 
+    
+    // Display Game Over Panel
+    reverseElements.gameOverPanel.classList.remove('hidden');
+    
+    // Save & Display High Score
+    const finalBest = updateReverseHighScore(reverseState.totalScore);
+    reverseElements.finalScoreText.textContent = `Final Score: ${reverseState.totalScore.toLocaleString()} points!`;
+    
+    if (reverseElements.finalHighScoreText) {
+      reverseElements.finalHighScoreText.textContent = `Personal Best: ${finalBest.toLocaleString()} pts`;
+    }
+  }
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ==========================================
+// 5. EFFECTS & INIT
 // ==========================================
 function launchConfetti() {
   const colors = ['#e63946', '#f1a208', '#2a9d8f', '#457b9d', '#f4a261', '#8ac926'];
@@ -631,18 +1134,26 @@ function playCorrectSound() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   const ctx = new AudioCtx();
 
-  playTone(ctx, 880, ctx.currentTime, 0.15);
-  playTone(ctx, 1318.5, ctx.currentTime + 0.12, 0.2);
+  playTone(ctx, 880, ctx.currentTime, 0.15, 'sine');
+  playTone(ctx, 1318.5, ctx.currentTime + 0.12, 0.2, 'sine');
 }
 
-function playTone(ctx, frequency, startTime, duration) {
+function playWrongSound() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioCtx();
+
+  playTone(ctx, 220, ctx.currentTime, 0.15, 'sawtooth');
+  playTone(ctx, 164.81, ctx.currentTime + 0.12, 0.25, 'sawtooth');
+}
+
+function playTone(ctx, frequency, startTime, duration, type = 'sine') {
   const oscillator = ctx.createOscillator();
   const gainNode = ctx.createGain();
 
-  oscillator.type = 'sine';
+  oscillator.type = type;
   oscillator.frequency.value = frequency;
 
-  gainNode.gain.setValueAtTime(0.2, startTime);
+  gainNode.gain.setValueAtTime(0.15, startTime);
   gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
   oscillator.connect(gainNode);
@@ -652,50 +1163,6 @@ function playTone(ctx, frequency, startTime, duration) {
   oscillator.stop(startTime + duration);
 }
 
-// Initializer
-async function init() {
-  setupModeNavigation();
-  setupPuzzleHeader();
-  await loadPokemonList();
-
-  const savedState = loadDailyProgress();
-
-  if (savedState) {
-    round = savedState.round;
-    totalScore = savedState.totalScore;
-    correctCount = savedState.correctCount;
-    currentStage = savedState.currentStage;
-
-    if (savedState.completed) {
-      startScreenEl.classList.add('hidden');
-      searchWrapperEl.classList.add('hidden');
-      buttonsEl.classList.add('hidden');
-      imageEl.style.filter = 'blur(0px)';
-      showGameOverPanel();
-      return;
-    }
-
-    startScreenEl.classList.add('hidden');
-    searchWrapperEl.classList.remove('hidden');
-    buttonsEl.classList.remove('hidden');
-
-    // Pass true to keep saved currentStage and fix loading screen
-    await loadNewPokemon(true);
-
-    if (savedState.awaitingNext) {
-      imageEl.style.filter = 'blur(0px)';
-      inputEl.disabled = true;
-      skipBtn.disabled = true;
-      nextBtn.classList.remove('hidden');
-      resultEl.textContent = `Round ${round} completed! Click Next Round to continue.`;
-    }
-    return;
-  }
-
-  startTeaserCarousel(imageEl, false);
-}
-
-// ---- Daily State LocalStorage Keys ----
 const DAILY_STORAGE_KEY = 'pokeblur-daily-state';
 
 function getDailyStorageKey() {
@@ -724,6 +1191,49 @@ function loadDailyProgress() {
   } catch (e) {
     return null;
   }
+}
+
+async function init() {
+  setupModeNavigation();
+  setupGenButtons();
+  setupPuzzleHeader();
+  updateReverseHighScoreDisplay();
+  await loadPokemonList();
+
+  const savedState = loadDailyProgress();
+
+  if (savedState) {
+    round = savedState.round;
+    totalScore = savedState.totalScore;
+    correctCount = savedState.correctCount;
+    currentStage = savedState.currentStage;
+
+    if (savedState.completed) {
+      startScreenEl.classList.add('hidden');
+      searchWrapperEl.classList.add('hidden');
+      buttonsEl.classList.add('hidden');
+      imageEl.style.filter = 'blur(0px)';
+      showGameOverPanel(getStoredStats());
+      return;
+    }
+
+    startScreenEl.classList.add('hidden');
+    searchWrapperEl.classList.remove('hidden');
+    buttonsEl.classList.remove('hidden');
+
+    await loadNewPokemon(true);
+
+    if (savedState.awaitingNext) {
+      imageEl.style.filter = 'blur(0px)';
+      inputEl.disabled = true;
+      skipBtn.disabled = true;
+      nextBtn.classList.remove('hidden');
+      resultEl.textContent = `Round ${round} completed! Click Next Round to continue.`;
+    }
+    return;
+  }
+
+  startTeaserCarousel(imageEl, false);
 }
 
 init();
