@@ -1041,20 +1041,75 @@ function handleHintClick(tile) {
   }
 }
 
+// Local type maps for dynamic matching without API lag
+const TYPE_POOLS = {
+  'Normal': 130, 'Fire': 80, 'Water': 160, 'Grass': 120, 'Electric': 60,
+  'Ice': 50, 'Fighting': 60, 'Poison': 75, 'Ground': 75, 'Flying': 110,
+  'Psychic': 100, 'Bug': 90, 'Rock': 75, 'Ghost': 65, 'Dragon': 60,
+  'Steel': 60, 'Dark': 70, 'Fairy': 65
+};
+
 function recalculatePoolWorth() {
-  const total = allPokemonList.filter(p => isPokemonInSelectedGens(p)).length;
-  let count = total;
+  const target = reverseState.targetDetails;
+  if (!target) return;
 
-  if (reverseState.revealedHints.has('generation')) count = Math.ceil(count / 4);
-  if (reverseState.revealedHints.has('primaryType')) count = Math.ceil(count / 5);
-  if (reverseState.revealedHints.has('secondaryType')) count = Math.ceil(count / 2);
-  if (reverseState.revealedHints.has('form')) count = Math.ceil(count / 2.5);
-  if (reverseState.revealedHints.has('bst')) count = Math.ceil(count / 3);
-  if (reverseState.revealedHints.has('size')) count = Math.ceil(count / 2);
+  // Total starting pool based on active generations
+  let remainingPoolSize = allPokemonList.filter(p => isPokemonInSelectedGens(p)).length;
 
-  if (reverseState.revealedHints.size === 6) count = 1;
+  // 1. Filter by Debut Generation
+  if (reverseState.revealedHints.has('generation')) {
+    const genNum = parseInt(target.generation.replace('Gen ', ''), 10);
+    const [min, max] = GEN_RANGES[genNum] || [1, 1025];
+    
+    // Count exact Pokémon that fall into this generation within selected gens
+    remainingPoolSize = allPokemonList.filter(p => {
+      if (!isPokemonInSelectedGens(p)) return false;
+      return p.id >= min && p.id <= max;
+    }).length;
+  }
 
-  reverseState.currentWorth = Math.max(1, count);
+  // 2. Filter by Primary Type
+  if (reverseState.revealedHints.has('primaryType')) {
+    const typeShare = (TYPE_POOLS[target.primaryType] || 70) / 1025;
+    remainingPoolSize = Math.ceil(remainingPoolSize * typeShare);
+  }
+
+  // 3. Filter by Secondary Type
+  if (reverseState.revealedHints.has('secondaryType')) {
+    if (target.secondaryType === 'None') {
+      remainingPoolSize = Math.ceil(remainingPoolSize * 0.5); // ~50% of Pokémon are monotype
+    } else {
+      const secShare = (TYPE_POOLS[target.secondaryType] || 60) / 1025;
+      remainingPoolSize = Math.ceil(remainingPoolSize * secShare);
+    }
+  }
+
+  // 4. Filter by Form
+  if (reverseState.revealedHints.has('form')) {
+    if (target.form !== 'Base Form') {
+      remainingPoolSize = Math.max(1, Math.ceil(remainingPoolSize * 0.08)); // Regional/Special forms are rare
+    } else {
+      remainingPoolSize = Math.ceil(remainingPoolSize * 0.85);
+    }
+  }
+
+  // 5. Filter by Base Stat Total (BST range bracket)
+  if (reverseState.revealedHints.has('bst')) {
+    remainingPoolSize = Math.ceil(remainingPoolSize * 0.25); // ~25% sit in a specific BST tier
+  }
+
+  // 6. Filter by Size (Height/Weight bracket)
+  if (reverseState.revealedHints.has('size')) {
+    remainingPoolSize = Math.ceil(remainingPoolSize * 0.35); // ~35% sit in a specific size bracket
+  }
+
+  // Final point assignment based on actual remaining count
+  if (reverseState.revealedHints.size === 6) {
+    reverseState.currentWorth = 1;
+  } else {
+    reverseState.currentWorth = Math.max(1, remainingPoolSize);
+  }
+
   reverseElements.currentValue.textContent = reverseState.currentWorth.toLocaleString();
 }
 
