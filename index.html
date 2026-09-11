@@ -137,87 +137,85 @@
       </div>
     </div>
 
-   <!-- REVERSE MODE VIEW -->
-<div id="reverse-view" class="hidden">
-  <header class="game-header">
-    <h2>Reverse Mode</h2>
-    <p id="reverse-round-label">Round 1 / 5 — Score: 0</p>
-    <div id="reverse-reward-box" class="reward-box hidden">
-      <span class="reward-label">Current Round Value:</span>
-      <span id="reverse-current-value">0</span>
-      <span class="reward-unit">pts</span>
-    </div>
-  </header>
+<!-- REVERSE MODE VIEW -->
+   <div id="reverse-view" class="hidden">
+     <header class="game-header">
+       <h2>Reverse Mode</h2>
+       <p id="reverse-round-label">Round 1 / 5 — Score: 0</p>
+       <div id="reverse-reward-box" class="reward-box hidden">
+         <span class="reward-label">Current Round Value:</span>
+         <span id="reverse-current-value">0</span>
+         <span class="reward-unit">pts</span>
+         <p class="reward-hint-subtext" style="font-size: 0.85rem; color: #a0a0a0; margin-top: 4px; font-style: italic;">
+           Points are proportional to the number of Pokémon matching revealed hints!
+         </p>
+       </div>
+     </header>
 
-  <!-- Reverse Start Screen -->
-  <div id="reverse-start-screen">
-    <p class="subtitle">
-      Guess the hidden Pokémon! Flip categories to reveal hints, but beware: the amount of points you get is proportional to how many available pokemon there are left. Wrong guesses force a hint flip!
-    </p>
-    <button id="reverse-start-btn" class="primary-btn">Start Reverse Game</button>
-  </div>
+     <!-- Reverse Start Screen -->
+     <div id="reverse-start-screen">
+       <p class="subtitle">
+         Guess the hidden Pokémon! Flip categories to reveal hints, but beware: the amount of points you get is proportional to how many available pokemon there are left. Wrong guesses force a hint flip!
+       </p>
+       <p id="reverse-high-score-display" style="font-size: 1.1rem; color: #f1c40f; font-weight: bold; margin-bottom: 15px;">High Score: 0 pts</p>
+       <button id="reverse-start-btn" class="primary-btn">Start Reverse Game</button>
+     </div>
 
-  <!-- Reverse Gameplay Container -->
-  <div id="reverse-game-play" class="hidden">
-    <!-- Side-by-Side Hints Grid (6 Categories) -->
-    <div class="hints-grid">
-      <button class="hint-tile" data-category="generation">
-        <span class="tile-label">Generation</span>
-        <span class="tile-value">???</span>
-      </button>
-      <button class="hint-tile" data-category="primaryType">
-        <span class="tile-label">Primary Type</span>
-        <span class="tile-value">???</span>
-      </button>
-      <button class="hint-tile" data-category="secondaryType">
-        <span class="tile-label">Secondary Type</span>
-        <span class="tile-value">???</span>
-      </button>
-      <button class="hint-tile" data-category="form">
-        <span class="tile-label">Form</span>
-        <span class="tile-value">???</span>
-      </button>
-      <button class="hint-tile" data-category="bst">
-        <span class="tile-label">Base Stat Total</span>
-        <span class="tile-value">???</span>
-      </button>
-      <button class="hint-tile" data-category="size">
-        <span class="tile-label">Height / Weight</span>
-        <span class="tile-value">???</span>
-      </button>
-    </div>
+     <!-- Reverse Gameplay Container -->
+     <div id="reverse-game-play" class="hidden">
+       <!-- Side-by-Side Hints Grid (6 Categories) -->
+       <div class="hints-grid">
+         <button class="hint-tile" data-category="generation">
+           <span class="tile-label">Generation</span>
+           <span class="tile-value">???</span>
+         </button>
+         <button class="hint-tile" data-category="primaryType">
+           <span class="tile-label">Primary Type</span>
+           <span class="tile-value">???</span>
+         </button>
+         <button class="hint-tile" data-category="secondaryType">
+           <span class="tile-label">Secondary Type</span>
+           <span class="tile-value">???</span>
+         </button>
+         <button class="hint-tile" data-category="form">
+           <span class="tile-label">Form</span>
+           <span class="tile-value">???</span>
+         </button>
+         <button class="hint-tile" data-category="bst">
+           <span class="tile-label">Base Stat Total</span>
+           <span class="tile-value">???</span>
+         </button>
+         <button class="hint-tile" data-category="size">
+           <span class="tile-label">Height / Weight</span>
+           <span class="tile-value">???</span>
+         </button>
+       </div>
 
-    <p id="reverse-status-msg" class="reverse-status">Make a guess or tap a category tile to reveal a hint!</p>
+       <p id="reverse-status-msg" class="reverse-status">Make a guess or tap a category tile to reveal a hint!</p>
 
-    <!-- Search Input matching Daily/Unlimited layout -->
-    <div id="reverse-search-wrapper">
-      <input type="text" id="reverse-guess-input" placeholder="Type a Pokémon name..." autocomplete="off" />
-      <div id="reverse-suggestions" class="suggestions-container"></div>
-    </div>
+       <!-- Search Input matching Daily/Unlimited layout -->
+       <div id="reverse-search-wrapper">
+         <input type="text" id="reverse-guess-input" placeholder="Type a Pokémon name..." autocomplete="off" />
+         <div id="reverse-suggestions" class="suggestions-container"></div>
+       </div>
 
-    <!-- Action Buttons -->
-    <div id="reverse-buttons" class="button-group">
-      <button id="reverse-skip-btn" class="action-btn">Give Up</button>
-      <button id="reverse-next-btn" class="action-btn hidden">Next Pokémon ➔</button>
-    </div>
-  </div>
+       <!-- Action Buttons -->
+       <div id="reverse-buttons" class="button-group">
+         <button id="reverse-skip-btn" class="action-btn">Give Up</button>
+         <button id="reverse-next-btn" class="action-btn hidden">Next Pokémon ➔</button>
+       </div>
+     </div>
 
-  <p id="reverse-result-message"></p>
+     <p id="reverse-result-message"></p>
 
-  <!-- Reverse Game Over Panel -->
-  <div id="reverse-game-over-panel" class="hidden">
-    <h2>Game Complete!</h2>
-    <p id="reverse-final-score-text"></p>
-    <div id="reverse-game-over-panel" class="game-over-panel hidden">
-  <h2>Game Complete!</h2>
-  <p id="reverse-final-score-text" class="final-score-text"></p>
-  <p id="reverse-final-highscore-text" class="final-highscore-text" style="color: #f1c40f; font-weight: bold; margin-top: 6px;"></p>
-  
-  <button id="reverse-play-again-btn" class="action-btn">Play Again</button>
-</div>
-    <button id="reverse-play-again-btn" class="primary-btn">Play Again</button>
-  </div>
-</div>
+     <!-- Reverse Game Over Panel -->
+     <div id="reverse-game-over-panel" class="game-over-panel hidden">
+       <h2>Game Complete!</h2>
+       <p id="reverse-final-score-text" class="final-score-text"></p>
+       <p id="reverse-final-highscore-text" class="final-highscore-text" style="color: #f1c40f; font-weight: bold; margin-top: 6px;"></p>
+       <button id="reverse-play-again-btn" class="primary-btn" style="margin-top: 15px;">Play Again</button>
+     </div>
+   </div>
 
   </main>
 
